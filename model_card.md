@@ -83,13 +83,6 @@ Run the **same set of queries** in all three modes. Fill in the table with short
 
 You can reuse or adapt the queries from `dataset.py`.
 
-| Query | Naive LLM: helpful or harmful? | Retrieval only: helpful or harmful? | RAG: helpful or harmful? | Notes |
-|------|---------------------------------|--------------------------------------|---------------------------|-------|
-| Example: Where is the auth token generated? | | | | |
-| Example: How do I connect to the database? | | | | |
-| Example: Which endpoint lists all users? | | | | |
-| Example: How does a client refresh an access token? | | | | |
-
 | Query                                      | Naive LLM: helpful or harmful?                                     | Retrieval only: helpful or harmful?                              | RAG: helpful or harmful?                                  | Notes                                              |
 | ------------------------------------------ | ------------------------------------------------------------------ | ---------------------------------------------------------------- | --------------------------------------------------------- | -------------------------------------------------- |
 | Where is the auth token generated?         | Helpful but overgeneralized; mentions IdP, JWT, backend frameworks | Helpful; shows exact snippet from `AUTH.md`                      | Helpful; concise and grounded in `AUTH.md`                | RAG balances readability and factual grounding     |
