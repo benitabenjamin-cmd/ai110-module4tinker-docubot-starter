@@ -10,6 +10,7 @@ Core DocuBot class responsible for:
 import os
 import glob
 
+
 class DocuBot:
     def __init__(self, docs_folder="docs", llm_client=None):
         """
@@ -65,6 +66,17 @@ class DocuBot:
         """
         index = {}
         # TODO: implement simple indexing
+        for filename, text in documents:
+            words = text.lower().split()
+
+            for word in words:
+                word = word.strip(".,!?()[]{}:\"'")
+
+                if word:
+                    if word not in index:
+                        index[word] = set()
+                    index[word].add(filename)
+
         return index
 
     # -----------------------------------------------------------
@@ -82,7 +94,15 @@ class DocuBot:
         - Return the count as the score
         """
         # TODO: implement scoring
-        return 0
+        score = 0
+        query_words = query.lower().split()
+        text_lower = text.lower()
+
+        for word in query_words:
+            if word in text_lower:
+                score += 1
+
+        return score
 
     def retrieve(self, query, top_k=3):
         """
@@ -93,8 +113,26 @@ class DocuBot:
         """
         results = []
         # TODO: implement retrieval logic
-        return results[:top_k]
+        for filename, text in self.documents:
+             # Split into smaller chunks (paragraphs)
+            paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
 
+            for para in paragraphs:
+                score = self.score_document(query, para)
+            
+                # Guardrail: only consider paragraphs with at least one matching word
+                if score > 0:
+                   results.append((score, filename, para))
+
+        # Sort by descending score
+        results.sort(reverse=True, key=lambda x: x[0])
+
+        # Take top_k results
+        top_results = [(filename, para) for score, filename, para in results[:top_k]]
+
+        # If nothing meets the guardrail, return empty list
+        return top_results
+        
     # -----------------------------------------------------------
     # Answering Modes
     # -----------------------------------------------------------
@@ -114,6 +152,7 @@ class DocuBot:
             formatted.append(f"[{filename}]\n{text}\n")
 
         return "\n---\n".join(formatted)
+    
 
     def answer_rag(self, query, top_k=3):
         """

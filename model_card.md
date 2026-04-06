@@ -15,16 +15,21 @@ Use clear, honest descriptions. It is fine if your system is imperfect.
 **What is DocuBot trying to do?**  
 Describe the overall goal in 2 to 3 sentences.
 
-> _Your answer here._
+>  DocuBot aims to help users answer questions about a set of documentation files by providing relevant information in a concise and understandable format. It uses retrieval and LLM generation to balance accuracy with readability.
+
 
 **What inputs does DocuBot take?**  
 For example: user question, docs in folder, environment variables.
 
-> _Your answer here._
+>      User question
+       Documentation files in the project folder (SETUP.md, AUTH.md, API_REFERENCE.md, etc.)
+       Optional environment variables like GEMINI_API_KEY for LLM access
 
 **What outputs does DocuBot produce?**
 
-> _Your answer here._
+>   Textual answers to user queries
+    Retrieved snippets (in retrieval-only mode)
+    References to source files when applicable
 
 ---
 
@@ -37,12 +42,16 @@ Describe your choices for indexing and scoring.
 - How do you score relevance for a query?
 - How do you choose top snippets?
 
-> _Your answer here._
+> Documents are split into small snippets (e.g., by sections or paragraphs) and indexed.
+Each snippet is scored for relevance against the query using vector similarity (embedding-based).
+Top N snippets (most relevant) are returned to the user or fed into the LLM.
 
 **What tradeoffs did you make?**  
 For example: speed vs precision, simplicity vs accuracy.
 
-> _Your answer here._
+> Snippet size vs context: smaller snippets improve precision but may lose context.
+Simplicity vs accuracy: used straightforward section-based splitting rather than complex chunking to keep code readable.
+Speed vs coverage: limited number of top snippets to reduce LLM input size, improving response speed.
 
 ---
 
@@ -55,12 +64,16 @@ Briefly describe how each mode behaves.
 - Retrieval only mode:
 - RAG mode:
 
-> _Your answer here._
+>  Naive LLM mode: always calls the LLM on the full documentation corpus; does not use retrieval.
+Retrieval only mode: never calls the LLM; returns raw relevant snippets.
+RAG mode: calls the LLM only on retrieved snippets to generate a concise, grounded answer.
 
 **What instructions do you give the LLM to keep it grounded?**  
 Summarize the rules from your prompt. For example: only use snippets, say "I do not know" when needed, cite files.
 
-> _Your answer here._
+> Use only the provided retrieved snippets to answer the question.
+If snippets do not contain enough information, respond: “I do not know based on the docs I have.”
+Cite the source file(s) used in the answer.
 
 ---
 
@@ -77,13 +90,23 @@ You can reuse or adapt the queries from `dataset.py`.
 | Example: Which endpoint lists all users? | | | | |
 | Example: How does a client refresh an access token? | | | | |
 
+| Query                                      | Naive LLM: helpful or harmful?                                     | Retrieval only: helpful or harmful?                              | RAG: helpful or harmful?                                  | Notes                                              |
+| ------------------------------------------ | ------------------------------------------------------------------ | ---------------------------------------------------------------- | --------------------------------------------------------- | -------------------------------------------------- |
+| Where is the auth token generated?         | Helpful but overgeneralized; mentions IdP, JWT, backend frameworks | Helpful; shows exact snippet from `AUTH.md`                      | Helpful; concise and grounded in `AUTH.md`                | RAG balances readability and factual grounding     |
+| How do I connect to the database?          | Helpful but may hallucinate steps not in docs                      | Helpful; shows `SETUP.md` snippet with DATABASE_URL instructions | Helpful; gives concise steps with reference to `SETUP.md` | RAG avoids extra speculation                       |
+| Which endpoint lists all users?            | Helpful; may mention endpoints not in docs                         | Helpful; raw snippet from `API_REFERENCE.md`                     | Helpful; concise, cites `API_REFERENCE.md`                | RAG produces user-friendly summary                 |
+| How does a client refresh an access token? | Helpful; explains concept but adds extra general info              | Helpful; shows snippet about `/api/refresh`                      | Helpful; concise, cites snippet                           | RAG avoids hallucinating refresh logic beyond docs |
+
+
 **What patterns did you notice?**  
 
 - When does naive LLM look impressive but untrustworthy?  
 - When is retrieval only clearly better?  
 - When is RAG clearly better than both?
 
-> _Your answer here._
+> Naive LLM looks impressive but can hallucinate details or include extra unrelated information.
+Retrieval only is accurate and fully grounded but harder to read and interpret.
+RAG consistently provides readable answers that are grounded in documentation, making it the most reliable for end users.
 
 ---
 
@@ -96,19 +119,26 @@ For each one, say:
 - What did the system do?  
 - What should have happened instead?
 
-> _Failure case 1 here._
+> Question: “Who can access the /api/projects endpoint?”
+What the system did: Naive LLM claimed only admins can access, even though docs specify users with access may vary.
+Correct behavior: Should return either the relevant snippet from API_REFERENCE.md or say “I do not know based on the docs I have.”
 
-> _Failure case 2 here._
+> Question: “What is the maximum token lifetime?”
+What the system did: RAG returned nothing because snippet threshold excluded small TOKEN_LIFETIME_SECONDS mention.
+Correct behavior: Should include snippet and note default of 3600 seconds from AUTH.md.
 
 **When should DocuBot say “I do not know based on the docs I have”?**  
 Give at least two specific situations.
 
-> _Your answer here._
+> When retrieved snippets do not provide enough evidence to answer the question.
+When a user asks about undocumented features or scenarios not in the corpus.
 
 **What guardrails did you implement?**  
 Examples: refusal rules, thresholds, limits on snippets, safe defaults.
 
-> _Your answer here._
+> Threshold on snippet relevance to avoid using unrelated context.
+Mandatory refusal if no useful snippets are retrieved.
+LLM instructed to cite source files and avoid inventing information.
 
 ---
 
@@ -117,16 +147,16 @@ Examples: refusal rules, thresholds, limits on snippets, safe defaults.
 **Current limitations**  
 List at least three limitations of your DocuBot system.
 
-1. _Limitation 1_
-2. _Limitation 2_
-3. _Limitation 3_
+1. Small snippet size may omit context.
+2. LLM may still infer slightly beyond snippets if instructions are misinterpreted.
+3. Retrieval only answers are less readable and require user interpretation.
 
 **Future improvements**  
 List two or three changes that would most improve reliability or usefulness.
 
-1. _Improvement 1_
-2. _Improvement 2_
-3. _Improvement 3_
+1. Adaptive snippet chunking for better context coverage.
+2. Enhanced prompt design to reduce LLM hallucinations further.
+3. Include confidence scoring to highlight uncertain answers.
 
 ---
 
@@ -135,13 +165,14 @@ List two or three changes that would most improve reliability or usefulness.
 **Where could this system cause real world harm if used carelessly?**  
 Think about wrong answers, missing information, or over trusting the LLM.
 
-> _Your answer here._
+> Users relying on Naive LLM may act on inaccurate or incomplete instructions.
+Sensitive configurations (e.g., AUTH_SECRET_KEY) may be misrepresented if hallucinated.
 
 **What instructions would you give real developers who want to use DocuBot safely?**  
 Write 2 to 4 short bullet points.
 
-- _Guideline 1_
-- _Guideline 2_
-- _Guideline 3 (optional)_
+- Always verify critical instructions against official documentation.
+- Prefer RAG mode for production use, not Naive LLM.
+- Do not trust raw LLM output for security-related or operational tasks.
 
 ---
