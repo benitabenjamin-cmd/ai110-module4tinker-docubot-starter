@@ -84,3 +84,7 @@ You will primarily work in:
 ## Summary
 
 In this activity, students needed to understand how a retrieval-augmented system combines search and LLM generation to provide grounded answers from documentation. The most common struggle was distinguishing between confident-sounding answers from the naive LLM that were not fully supported by the docs. Retrieval-only mode was helpful for accuracy but often difficult to interpret, while RAG provided clear, concise, and evidence-based answers. AI was particularly helpful in summarizing multiple snippets into a coherent response, but misleading when it hallucinated information beyond the retrieved content. Students also needed to grasp how snippet selection and prompt instructions affect LLM reliability. I would guide a student without giving the answer by asking them compare relevant sections in the docs, prompting them to reason using the evidence themselves. Overall, this exercise highlighted the importance of grounding AI outputs in real documentation while balancing readability and correctness.
+
+
+## Demo
+![DocuBot RAG Demo](images/DEMO.png)
